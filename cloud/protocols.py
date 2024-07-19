@@ -18,7 +18,7 @@ class StorageURLSigner(Protocol):
     def generate_presigned_url(
         self,
         bucket_name: str,
-        object_name: str,
+        source_filename: str,
         expiration: int,
         client_method_name: str,
     ) -> str: ...
