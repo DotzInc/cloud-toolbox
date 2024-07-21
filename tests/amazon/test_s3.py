@@ -1,8 +1,8 @@
 import unittest
 from unittest import mock
 
-from cloud.amazon.s3 import Downloader, Uploader
-from cloud.protocols import StorageDownloader, StorageUploader
+from cloud.amazon.s3 import Downloader, Uploader, URLSigner
+from cloud.protocols import StorageDownloader, StorageUploader, StorageURLSigner
 
 
 class TestStorageUploader(unittest.TestCase):
@@ -39,3 +39,26 @@ class TestStorageDownloader(unittest.TestCase):
 
         cli = client_mock.return_value
         cli.download_file.assert_called_once_with(bucket_name, object_name, destination)
+
+
+class TestStorageURLSigner(unittest.TestCase):
+    @mock.patch("boto3.client")
+    def test_storage_generate_presigned_url(self, client_mock):
+        urlsigner = URLSigner()
+
+        self.assertIsInstance(urlsigner, StorageURLSigner)
+        client_mock.assert_called_once_with("s3")
+
+        bucket_name = "test-bucket"
+        object_name = "test.txt"
+        expiration = 3600
+        client_method_name = "get_object"
+
+        urlsigner.generate_presigned_url(bucket_name, object_name)
+
+        cli = client_mock.return_value
+        cli.generate_presigned_url.assert_called_once_with(
+            ClientMethod=client_method_name,
+            Params={"Bucket": bucket_name, "Key": object_name},
+            ExpiresIn=expiration,
+        )
