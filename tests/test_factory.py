@@ -18,7 +18,7 @@ class NotStorageDownloader:
 
 
 class NotStorageURLSigner:
-    def download_file(self):
+    def url_signed(self):
         pass
 
 

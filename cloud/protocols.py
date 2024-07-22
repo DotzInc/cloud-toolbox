@@ -20,7 +20,6 @@ class StorageURLSigner(Protocol):
         bucket_name: str,
         source_filename: str,
         expiration: int,
-        client_method_name: str,
     ) -> str: ...
 
 
