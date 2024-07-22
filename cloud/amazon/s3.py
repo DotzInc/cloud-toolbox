@@ -29,7 +29,7 @@ class Client:
         bucket_name: str,
         source_filename: str,
         expiration: int,
-        client_method_name: str = ClientMethodName,
+        client_method_name: ClientMethodName,
     ) -> str:
         url = self.client.generate_presigned_url(
             ClientMethod=client_method_name,
