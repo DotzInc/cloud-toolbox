@@ -4,7 +4,7 @@ from unittest import mock
 from cloud import factory
 from cloud.amazon import s3, sns, sqs
 from cloud.google import pubsub, storage
-from cloud.protocols import MessagePublisher, StorageDownloader, StorageUploader
+from cloud.protocols import MessagePublisher, StorageDownloader, StorageUploader, StorageURLSigner
 
 
 class NotStorageUploader:
@@ -13,6 +13,11 @@ class NotStorageUploader:
 
 
 class NotStorageDownloader:
+    def download_file(self):
+        pass
+
+
+class NotStorageURLSigner:
     def download_file(self):
         pass
 
@@ -68,6 +73,30 @@ class TestStorageDownloaderFactory(unittest.TestCase):
 
         with self.assertRaisesRegex(AssertionError, error):
             factory.storage_downloader(NotStorageDownloader)  # type: ignore
+
+
+class TestStorageURLSignerFactory(unittest.TestCase):
+    @mock.patch("google.cloud.storage.Client")
+    def test_google_urlsigner(self, _):
+        URLSigner = factory.storage_urlsigner(storage.URLSigner)
+        urlsigner = URLSigner()
+
+        self.assertIsInstance(urlsigner, StorageURLSigner)
+        self.assertIsInstance(urlsigner, storage.URLSigner)
+
+    @mock.patch("boto3.client")
+    def test_amazon_urlsigner(self, _):
+        URLSigner = factory.storage_urlsigner(s3.URLSigner)
+        urlsigner = URLSigner()
+
+        self.assertIsInstance(urlsigner, StorageURLSigner)
+        self.assertIsInstance(urlsigner, s3.URLSigner)
+
+    def test_downloader_protocol_validation(self):
+        error = "NotStorageURLSigner does not implement StorageURLSigner protocol"
+
+        with self.assertRaisesRegex(AssertionError, error):
+            factory.storage_urlsigner(NotStorageURLSigner)  # type: ignore
 
 
 class TestMessagePublisherFactory(unittest.TestCase):
