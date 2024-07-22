@@ -22,7 +22,7 @@ class Client:
         self,
         bucket_name: str,
         source_filename: str,
-        expiration: int = 60,
+        expiration: int = 3600,
         client_method_name: str = "GET",
     ) -> str:
         credentials, _ = auth.default()
@@ -35,7 +35,7 @@ class Client:
             version="v4",
             service_account_email=credentials.service_account_email,
             access_token=credentials.token,
-            expiration=datetime.timedelta(minutes=expiration),
+            expiration=datetime.timedelta(seconds=expiration),
             method=client_method_name,
         )
         return url
