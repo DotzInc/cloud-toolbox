@@ -20,13 +20,13 @@ class Client:
         expiration: int = 3600,
         client_method_name: str = "get_object",
     ) -> str:
-        response = self.client.generate_presigned_url(
+        url = self.client.generate_presigned_url(
             ClientMethod=client_method_name,
             Params={"Bucket": bucket_name, "Key": source_filename},
             ExpiresIn=expiration,
         )
 
-        return response
+        return url
 
 
 class Uploader(Client):
