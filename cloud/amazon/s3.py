@@ -1,6 +1,17 @@
+from enum import Enum
 from typing import Any
 
 import boto3
+
+
+class ClientMethodName(str, Enum):
+    GET_OBJECT = "get_object"
+    LIST_OBJECTS = "list_objects"
+    LIST_OBJECTS_V2 = "list_objects_v2"
+    PUT_OBJECT = "put_object"
+    DELETE_OBJECT = "delete_object"
+    HEAD_OBJECT = "head_object"
+    COPY_OBJECT = "copy_object"
 
 
 class Client:
@@ -17,8 +28,8 @@ class Client:
         self,
         bucket_name: str,
         source_filename: str,
-        expiration: int = 3600,
-        client_method_name: str = "get_object",
+        expiration: int,
+        client_method_name: str = ClientMethodName,
     ) -> str:
         url = self.client.generate_presigned_url(
             ClientMethod=client_method_name,
