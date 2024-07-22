@@ -14,5 +14,16 @@ class StorageDownloader(Protocol):
 
 
 @runtime_checkable
+class StorageURLSigner(Protocol):
+    def generate_presigned_url(
+        self,
+        bucket_name: str,
+        source_filename: str,
+        expiration: int,
+        client_method_name: str,
+    ) -> str: ...
+
+
+@runtime_checkable
 class MessagePublisher(Protocol):
     def publish(self, recipient: str, message: str, **attrs: Any) -> None: ...
