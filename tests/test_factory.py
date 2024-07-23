@@ -4,7 +4,7 @@ from unittest import mock
 from cloud import factory
 from cloud.amazon import s3, sns, sqs
 from cloud.google import pubsub, storage
-from cloud.protocols import MessagePublisher, StorageDownloader, StorageUploader
+from cloud.protocols import MessagePublisher, StorageDownloader, StorageUploader, StorageURLSigner
 
 
 class NotStorageUploader:
@@ -15,6 +15,21 @@ class NotStorageUploader:
 class NotStorageDownloader:
     def download_file(self):
         pass
+
+
+class NotStorageURLSigner:
+    def sign_url(self):
+        pass
+
+
+class DummyStorageURLSigner:
+    def generate_presigned_url(
+        self,
+        bucket_name: str,
+        source_filename: str,
+        expiration: int,
+    ) -> str:
+        return ""
 
 
 class NotMessagePublisher:
@@ -68,6 +83,21 @@ class TestStorageDownloaderFactory(unittest.TestCase):
 
         with self.assertRaisesRegex(AssertionError, error):
             factory.storage_downloader(NotStorageDownloader)  # type: ignore
+
+
+class TestStorageURLSigner(unittest.TestCase):
+    def test_urlsigner(self):
+        URLSigner = factory.storage_urlsigner(DummyStorageURLSigner)
+        urlsigner = URLSigner()
+
+        self.assertIsInstance(urlsigner, StorageURLSigner)
+        self.assertIsInstance(urlsigner, DummyStorageURLSigner)
+
+    def test_urlsigner_protocol_validation(self):
+        error = "NotStorageURLSigner does not implement StorageURLSigner protocol"
+
+        with self.assertRaisesRegex(AssertionError, error):
+            factory.storage_urlsigner(NotStorageURLSigner)  # type: ignore
 
 
 class TestMessagePublisherFactory(unittest.TestCase):
