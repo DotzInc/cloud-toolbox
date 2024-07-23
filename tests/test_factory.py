@@ -85,7 +85,7 @@ class TestStorageDownloaderFactory(unittest.TestCase):
             factory.storage_downloader(NotStorageDownloader)  # type: ignore
 
 
-class TestDummyStorageURLSigner(unittest.TestCase):
+class TestStorageURLSigner(unittest.TestCase):
     def test_urlsigner(self):
         URLSigner = factory.storage_urlsigner(DummyStorageURLSigner)
         urlsigner = URLSigner()
@@ -93,7 +93,7 @@ class TestDummyStorageURLSigner(unittest.TestCase):
         self.assertIsInstance(urlsigner, StorageURLSigner)
         self.assertIsInstance(urlsigner, DummyStorageURLSigner)
 
-    def test_downloader_protocol_validation(self):
+    def test_urlsigner_protocol_validation(self):
         error = "NotStorageURLSigner does not implement StorageURLSigner protocol"
 
         with self.assertRaisesRegex(AssertionError, error):
