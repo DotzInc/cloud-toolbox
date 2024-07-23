@@ -13,29 +13,10 @@ class Client:
     def download(self, bucket_name: str, source_filename: str, destination_filename: str) -> None:
         self.client.download_file(bucket_name, source_filename, destination_filename)
 
-    def generate_presigned_url(
-        self,
-        bucket_name: str,
-        source_filename: str,
-        expiration: int = 3600,
-        client_method_name: str = "get_object",
-    ) -> str:
-        response = self.client.generate_presigned_url(
-            ClientMethod=client_method_name,
-            Params={"Bucket": bucket_name, "Key": source_filename},
-            ExpiresIn=expiration,
-        )
-
-        return response
-
 
 class Uploader(Client):
     pass
 
 
 class Downloader(Client):
-    pass
-
-
-class URLSigner(Client):
     pass
