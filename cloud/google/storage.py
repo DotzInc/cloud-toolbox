@@ -31,11 +31,9 @@ class Client:
         blob = self.client.bucket(bucket_name).blob(source_filename)
 
         url = blob.generate_signed_url(
-            version="v4",
             service_account_email=credentials.service_account_email,
             access_token=credentials.token,
             expiration=datetime.timedelta(seconds=expiration),
-            method="GET",
         )
         return url
 

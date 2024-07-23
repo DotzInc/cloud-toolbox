@@ -65,9 +65,9 @@ class TestStorageURLSigner(unittest.TestCase):
 
         bucket_name = "test-bucket"
         object_name = "test.txt"
-        expiration = 60
+        expiration = 3600
 
-        urlsigner.generate_presigned_url(bucket_name, object_name)
+        urlsigner.generate_presigned_url(bucket_name, object_name, expiration)
 
         cli = client_mock.return_value
         cli.bucket.assert_called_once_with(bucket_name)
@@ -77,9 +77,7 @@ class TestStorageURLSigner(unittest.TestCase):
 
         blob = bucket.blob.return_value
         blob.generate_signed_url.assert_called_once_with(
-            version="v4",
             service_account_email=mock.ANY,
             access_token=None,
-            expiration=datetime.timedelta(minutes=expiration),
-            method="GET",
+            expiration=datetime.timedelta(seconds=expiration),
         )
