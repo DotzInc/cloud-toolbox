@@ -18,8 +18,18 @@ class NotStorageDownloader:
 
 
 class NotStorageURLSigner:
-    def url_signed(self):
+    def sign_url(self):
         pass
+
+
+class DummyStorageURLSigner:
+    def generate_presigned_url(
+        self,
+        bucket_name: str,
+        source_filename: str,
+        expiration: int,
+    ) -> str:
+        return ""
 
 
 class NotMessagePublisher:
@@ -76,21 +86,12 @@ class TestStorageDownloaderFactory(unittest.TestCase):
 
 
 class TestStorageURLSignerFactory(unittest.TestCase):
-    @mock.patch("google.cloud.storage.Client")
-    def test_google_urlsigner(self, _):
-        URLSigner = factory.storage_urlsigner(storage.URLSigner)
+    def test_urlsigner(self):
+        URLSigner = factory.storage_urlsigner(DummyStorageURLSigner)
         urlsigner = URLSigner()
 
         self.assertIsInstance(urlsigner, StorageURLSigner)
-        self.assertIsInstance(urlsigner, storage.URLSigner)
-
-    @mock.patch("boto3.client")
-    def test_amazon_urlsigner(self, _):
-        URLSigner = factory.storage_urlsigner(s3.URLSigner)
-        urlsigner = URLSigner()
-
-        self.assertIsInstance(urlsigner, StorageURLSigner)
-        self.assertIsInstance(urlsigner, s3.URLSigner)
+        self.assertIsInstance(urlsigner, DummyStorageURLSigner)
 
     def test_downloader_protocol_validation(self):
         error = "NotStorageURLSigner does not implement StorageURLSigner protocol"
