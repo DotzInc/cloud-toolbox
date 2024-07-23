@@ -85,7 +85,7 @@ class TestStorageDownloaderFactory(unittest.TestCase):
             factory.storage_downloader(NotStorageDownloader)  # type: ignore
 
 
-class TestStorageURLSignerFactory(unittest.TestCase):
+class TestDummyStorageURLSigner(unittest.TestCase):
     def test_urlsigner(self):
         URLSigner = factory.storage_urlsigner(DummyStorageURLSigner)
         urlsigner = URLSigner()
