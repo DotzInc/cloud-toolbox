@@ -24,8 +24,8 @@ class Client:
         expiration: int,
     ) -> str:
         credentials, _ = auth.default()
-        self.clientcred = storage.Client(credentials=credentials)
-        blob = self.clientcred.bucket(bucket_name).blob(source_filename)
+        client = storage.Client(credentials=credentials)
+        blob = client.bucket(bucket_name).blob(source_filename)
 
         url = blob.generate_signed_url(
             expiration=datetime.timedelta(seconds=expiration),
