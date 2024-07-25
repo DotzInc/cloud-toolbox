@@ -1,11 +1,17 @@
 import datetime
 from typing import Any
 
+import google.auth
 from google.cloud import storage
 
 
 class Client:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        if "credentials" not in kwargs:
+            credentials, project = google.auth.default()
+            kwargs["credentials"] = credentials
+            kwargs["project"] = project
+
         self.client = storage.Client(*args, **kwargs)
 
     def upload(self, bucket_name: str, destination_filename: str, source_filename: str) -> None:

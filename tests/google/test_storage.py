@@ -56,10 +56,14 @@ class TestStorageDownloader(unittest.TestCase):
 
 class TestStorageURLSigner(unittest.TestCase):
     @mock.patch("google.cloud.storage.Client")
-    def test_storage_urlsigner(self, client_mock):
+    @mock.patch("google.auth")
+    def test_storage_urlsigner(self, auth_mock, client_mock):
+        credentials = mock.MagicMock()
+        project = "teste-project"
+        auth_mock.default.return_value = (credentials, project)
         urlsigner = URLSigner()
 
-        client_mock.assert_called_once_with()
+        client_mock.assert_called_once_with(credentials=credentials, project=project)
 
         bucket_name = "test-bucket"
         object_name = "test.txt"
