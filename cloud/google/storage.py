@@ -1,14 +1,14 @@
 import datetime
 from typing import Any
 
-import google.auth
+from google import auth
 from google.cloud import storage
 
 
 class Client:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if "credentials" not in kwargs:
-            credentials, project = google.auth.default()
+            credentials, project = auth.default()
             kwargs["credentials"] = credentials
             kwargs["project"] = project
 
