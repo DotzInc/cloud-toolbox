@@ -1,20 +1,19 @@
 import datetime
 from typing import Any
 
-import google.auth
+from google import auth
+from google.auth.transport import requests
 from google.cloud import storage
 
 
 class Client:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if "credentials" not in kwargs:
-            credentials, project = google.auth.default()
+            credentials, project = auth.default()
+            r = requests.Request()
+            credentials.refresh(r)
             kwargs["credentials"] = credentials
             kwargs["project"] = project
-
-            self.credentials = credentials
-        else:
-            self.credentials = kwargs["credentials"]
 
         self.client = storage.Client(*args, **kwargs)
 
@@ -33,7 +32,6 @@ class Client:
         expiration: int,
     ) -> str:
         blob = self.client.bucket(bucket_name).blob(source_filename)
-
         url = blob.generate_signed_url(
             version="v4",
             expiration=datetime.timedelta(seconds=expiration),
