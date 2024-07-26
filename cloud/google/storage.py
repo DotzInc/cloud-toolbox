@@ -12,6 +12,10 @@ class Client:
             kwargs["credentials"] = credentials
             kwargs["project"] = project
 
+            self.credentials = credentials
+        else:
+            self.credentials = kwargs["credentials"]
+
         self.client = storage.Client(*args, **kwargs)
 
     def upload(self, bucket_name: str, destination_filename: str, source_filename: str) -> None:
@@ -31,6 +35,7 @@ class Client:
         blob = self.client.bucket(bucket_name).blob(source_filename)
 
         url = blob.generate_signed_url(
+            version="v4",
             expiration=datetime.timedelta(seconds=expiration),
         )
         return url

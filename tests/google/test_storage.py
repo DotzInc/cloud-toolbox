@@ -79,5 +79,6 @@ class TestStorageURLSigner(unittest.TestCase):
 
         blob = bucket.blob.return_value
         blob.generate_signed_url.assert_called_once_with(
+            version="v4",
             expiration=datetime.timedelta(seconds=expiration),
         )
