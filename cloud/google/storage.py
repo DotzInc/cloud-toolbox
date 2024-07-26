@@ -1,5 +1,8 @@
+import datetime
 from typing import Any
 
+from google import auth
+from google.auth.transport import requests
 from google.cloud import storage
 
 
@@ -15,10 +18,32 @@ class Client:
         blob = self.client.bucket(bucket_name).blob(source_filename)
         blob.download_to_filename(destination_filename)
 
+    def generate_presigned_url(
+        self,
+        bucket_name: str,
+        source_filename: str,
+        expiration: int,
+    ) -> str:
+        credentials, project = auth.default()
+        if credentials.token is None:
+            credentials.refresh(requests.Request())
+
+        blob = self.client.bucket(bucket_name).blob(source_filename)
+        url = blob.generate_signed_url(
+            expiration=datetime.timedelta(seconds=expiration),
+            service_account_email=credentials.service_account_email,
+            access_token=credentials.token,
+        )
+        return url
+
 
 class Uploader(Client):
     pass
 
 
 class Downloader(Client):
+    pass
+
+
+class URLSigner(Client):
     pass
