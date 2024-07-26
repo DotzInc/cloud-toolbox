@@ -8,13 +8,6 @@ from google.cloud import storage
 
 class Client:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        if "credentials" not in kwargs:
-            credentials, project = auth.default()
-            r = requests.Request()
-            credentials.refresh(r)
-            kwargs["credentials"] = credentials
-            kwargs["project"] = project
-
         self.client = storage.Client(*args, **kwargs)
 
     def upload(self, bucket_name: str, destination_filename: str, source_filename: str) -> None:
@@ -31,10 +24,15 @@ class Client:
         source_filename: str,
         expiration: int,
     ) -> str:
+        credentials, project = auth.default()
+        if credentials.token is None:
+            credentials.refresh(requests.Request())
+
         blob = self.client.bucket(bucket_name).blob(source_filename)
         url = blob.generate_signed_url(
-            version="v4",
             expiration=datetime.timedelta(seconds=expiration),
+            service_account_email=credentials.service_account_email,
+            access_token=credentials.token,
         )
         return url
 
