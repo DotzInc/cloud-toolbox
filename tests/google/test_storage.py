@@ -1,7 +1,8 @@
+import datetime
 import unittest
 from unittest import mock
 
-from cloud.google.storage import Downloader, Uploader
+from cloud.google.storage import Downloader, Uploader, URLSigner
 from cloud.protocols import StorageDownloader, StorageUploader
 
 
@@ -51,3 +52,27 @@ class TestStorageDownloader(unittest.TestCase):
 
         blob = bucket.blob.return_value
         blob.download_to_filename.assert_called_once_with(destination)
+
+
+class TestStorageURLSigner(unittest.TestCase):
+    @mock.patch("google.cloud.storage.Client")
+    def test_storage_urlsigner(self, client_mock):
+        urlsigner = URLSigner()
+        client_mock.assert_called_once_with()
+
+        bucket_name = "test-bucket"
+        object_name = "test.txt"
+        expiration = 3600
+
+        urlsigner.generate_presigned_url(bucket_name, object_name, expiration)
+
+        cli = client_mock.return_value
+        cli.bucket.assert_called_once_with(bucket_name)
+
+        bucket = cli.bucket.return_value
+        bucket.blob.assert_called_once_with(object_name)
+
+        blob = bucket.blob.return_value
+        blob.generate_signed_url.assert_called_once_with(
+            expiration=datetime.timedelta(seconds=expiration), version="v4"
+        )
