@@ -56,9 +56,7 @@ class TestStorageDownloader(unittest.TestCase):
 
 class TestStorageURLSigner(unittest.TestCase):
     @mock.patch("google.cloud.storage.Client")
-    @mock.patch("google.auth.default")
-    def test_storage_urlsigner(self, credentials_mock, client_mock):
-        credentials_mock.return_value = (mock.MagicMock(token=None), None)
+    def test_storage_urlsigner(self, client_mock):
         urlsigner = URLSigner()
         client_mock.assert_called_once_with()
 
@@ -76,7 +74,5 @@ class TestStorageURLSigner(unittest.TestCase):
 
         blob = bucket.blob.return_value
         blob.generate_signed_url.assert_called_once_with(
-            expiration=datetime.timedelta(seconds=expiration),
-            service_account_email=mock.ANY,
-            access_token=None,
+            expiration=datetime.timedelta(seconds=expiration), version="v4"
         )
