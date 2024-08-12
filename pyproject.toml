@@ -4,12 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cloudtoolbox"
-version = "0.2.1"
+version = "0.3.0"
 description = "Toolbox for the cloud."
-readme = {file = "README.md", content-type = "text/markdown"}
-authors = [
-    {name = "Dotz Developers", email = "devs-dotz@dotz.com"},
-]
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [{ name = "Dotz Developers", email = "devs-dotz@dotz.com" }]
 keywords = ["cloud", "tools", "utilities", "google", "gcp", "amazon", "aws"]
 classifiers = [
     "Operating System :: OS Independent",
@@ -33,24 +31,16 @@ Repository = "https://github.com/DotzInc/cloud-toolbox"
 [project.optional-dependencies]
 amazon = ["boto3"]
 google = ["google-cloud-pubsub", "google-cloud-storage"]
-all = [
-    "boto3",
-    "google-cloud-pubsub",
-    "google-cloud-storage",
-]
+all = ["boto3", "google-cloud-pubsub", "google-cloud-storage"]
 
 [tool.ruff]
-exclude = [
-    ".git",
-    ".venv",
-    ".ruff_cache",
-]
+exclude = [".git", ".venv", ".ruff_cache"]
 
 line-length = 100
 indent-width = 4
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "C4", "UP","ARG001"]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG001"]
 ignore = ["E402", "E501", "W191", "B904"]
 fixable = ["ALL"]
 unfixable = []
