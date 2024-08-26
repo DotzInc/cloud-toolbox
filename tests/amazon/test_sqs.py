@@ -8,6 +8,10 @@ from cloud.protocols import MessagePublisher
 class TestMessagePublisher(unittest.TestCase):
     @mock.patch("boto3.client")
     def test_message_publisher(self, client_mock):
+        response = {"MessageId": "8a70d06b-ebe7-4f63-9b89-f5e3c89d56bb"}
+        cli = client_mock.return_value
+        cli.send_message.return_value = response
+
         publisher = Publisher()
 
         self.assertIsInstance(publisher, MessagePublisher)
@@ -16,7 +20,7 @@ class TestMessagePublisher(unittest.TestCase):
         queue = "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
         message = "test message"
 
-        publisher.publish(queue, message)
+        message_id = publisher.publish(queue, message)
 
-        cli = client_mock.return_value
+        self.assertEqual(message_id, response["MessageId"])
         cli.send_message.assert_called_once_with(QueueUrl=queue, MessageBody=message)
