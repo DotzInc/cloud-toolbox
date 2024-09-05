@@ -1,10 +1,10 @@
-from typing import Dict, Union
+from typing import Mapping, Union
 
 DataType = Union[str, bytes, int, float]
-MessageAttributes = Dict[str, Dict[str, DataType]]
+MessageAttributes = Mapping[str, Mapping[str, DataType]]
 
 
-def build_attributes(data: Dict[str, DataType]) -> MessageAttributes:
+def build_attributes(data: Mapping[str, DataType]) -> MessageAttributes:
     attrs = {}
 
     for key, value in data.items():
