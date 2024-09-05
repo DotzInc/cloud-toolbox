@@ -9,7 +9,7 @@ class TestBuildAttributes(unittest.TestCase):
         expected = {
             "foo": {"StringValue": data["foo"], "DataType": "String"},
             "bar": {"BinaryValue": data["bar"], "DataType": "Binary"},
-            "baz": {"StringValue": data["baz"], "DataType": "Number"},
+            "baz": {"StringValue": str(data["baz"]), "DataType": "Number"},
         }
         attributes = helpers.build_attributes(data)
 

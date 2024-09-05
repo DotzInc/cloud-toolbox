@@ -13,7 +13,7 @@ def build_attributes(data: Mapping[str, DataType]) -> MessageAttributes:
         elif isinstance(value, bytes):
             attr = {"BinaryValue": value, "DataType": "Binary"}
         elif isinstance(value, (int, float)):
-            attr = {"StringValue": value, "DataType": "Number"}
+            attr = {"StringValue": str(value), "DataType": "Number"}
         else:
             raise TypeError(f"{value} of type {type(value).__name__} is not supported")
 
