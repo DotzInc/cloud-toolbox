@@ -109,6 +109,14 @@ class TestMessagePublisherFactory(unittest.TestCase):
         self.assertIsInstance(publisher, MessagePublisher)
         self.assertIsInstance(publisher, pubsub.Publisher)
 
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_google_ordered_publisher(self, _):
+        OrderedPublisher = factory.message_publisher(pubsub.OrderedPublisher)
+        publisher = OrderedPublisher()
+
+        self.assertIsInstance(publisher, MessagePublisher)
+        self.assertIsInstance(publisher, pubsub.OrderedPublisher)
+
     @mock.patch("boto3.client")
     def test_amazon_publisher(self, _):
         for cls in (sns.Publisher, sqs.Publisher):
