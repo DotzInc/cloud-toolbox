@@ -1,4 +1,4 @@
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Mapping, Optional, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -25,4 +25,12 @@ class StorageURLSigner(Protocol):
 
 @runtime_checkable
 class MessagePublisher(Protocol):
-    def publish(self, recipient: str, message: str, group: str = "", **attrs: Any) -> str: ...
+    def publish(
+        self,
+        recipient: str,
+        message: str,
+        /,
+        *,
+        group: str = "",
+        attrs: Optional[Mapping[str, Any]] = None,
+    ) -> str: ...
