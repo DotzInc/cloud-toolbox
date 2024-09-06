@@ -2,6 +2,7 @@ import unittest
 import uuid
 from unittest import mock
 
+from cloud.amazon import helpers
 from cloud.amazon.sns import Publisher
 from cloud.protocols import MessagePublisher
 
@@ -43,13 +44,13 @@ class TestMessagePublisher(unittest.TestCase):
         topic = "arn:aws:sns:us-east-1:123456789012:test-topic"
         message = "test message"
         attributes = {"foo": "bar"}
-        message_id = publisher.publish(topic, message, **attributes)
+        message_id = publisher.publish(topic, message, attrs=attributes)
 
         self.assertEqual(message_id, response["MessageId"])
         self.client.publish.assert_called_once_with(
             TargetArn=topic,
             Message=message,
-            MessageAttributes=attributes,
+            MessageAttributes=helpers.build_attributes(attributes),
         )
 
     def test_publish_with_ordering(self):
@@ -67,7 +68,7 @@ class TestMessagePublisher(unittest.TestCase):
         deduplication_id = uuid.uuid4()
 
         with mock.patch("uuid.uuid4", lambda: deduplication_id):
-            message_id = publisher.publish(topic, message, group)
+            message_id = publisher.publish(topic, message, group=group)
 
         self.assertEqual(message_id, response["MessageId"])
         self.client.publish.assert_called_once_with(

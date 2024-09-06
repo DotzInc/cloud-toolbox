@@ -2,6 +2,7 @@ import unittest
 import uuid
 from unittest import mock
 
+from cloud.amazon import helpers
 from cloud.amazon.sqs import Publisher
 from cloud.protocols import MessagePublisher
 
@@ -43,13 +44,13 @@ class TestMessagePublisher(unittest.TestCase):
         queue = "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
         message = "test message"
         attributes = {"foo": "bar"}
-        message_id = publisher.publish(queue, message, **attributes)
+        message_id = publisher.publish(queue, message, attrs=attributes)
 
         self.assertEqual(message_id, response["MessageId"])
         self.client.send_message.assert_called_once_with(
             QueueUrl=queue,
             MessageBody=message,
-            MessageAttributes=attributes,
+            MessageAttributes=helpers.build_attributes(attributes),
         )
 
     def test_publish_with_ordering(self):
@@ -67,7 +68,7 @@ class TestMessagePublisher(unittest.TestCase):
         deduplication_id = uuid.uuid4()
 
         with mock.patch("uuid.uuid4", lambda: deduplication_id):
-            message_id = publisher.publish(queue, message, group)
+            message_id = publisher.publish(queue, message, group=group)
 
         self.assertEqual(message_id, response["MessageId"])
         self.client.send_message.assert_called_once_with(

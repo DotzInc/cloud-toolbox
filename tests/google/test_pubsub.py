@@ -45,7 +45,7 @@ class TestMessagePublisher(unittest.TestCase):
         topic = "projects/test-project/topics/test-topic"
         message = "test message"
         attributes = {"foo": "bar"}
-        message_id = publisher.publish(topic, message, **attributes)
+        message_id = publisher.publish(topic, message, attrs=attributes)
 
         self.assertEqual(message_id, result)
         self.client.publish.assert_called_once_with(
@@ -68,7 +68,7 @@ class TestMessagePublisher(unittest.TestCase):
         topic = "projects/test-project/topics/test-topic"
         message = "test message"
         group = "test"
-        message_id = publisher.publish(topic, message, group)
+        message_id = publisher.publish(topic, message, group=group)
 
         self.assertEqual(message_id, result)
         self.client.publish.assert_called_once_with(
