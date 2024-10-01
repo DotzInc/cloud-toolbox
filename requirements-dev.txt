@@ -3,7 +3,7 @@ build==1.2.1
 coverage==7.6.1
 google-cloud-pubsub==2.23.0
 google-cloud-storage==2.18.2
-ruff==0.6.3
+ruff==0.6.8
 setuptools==74.1.1
 twine==5.1.1
 
