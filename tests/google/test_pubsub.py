@@ -21,31 +21,64 @@ class TestMessagePublisher(unittest.TestCase):
         result = "bd02bec5-ac5f-429b-8f64-8cde17596d57"
         self.future.result.return_value = result
 
-        publisher = Publisher()
-
-        self.assertIsInstance(publisher, MessagePublisher)
-        self.mock.assert_called_once_with()
-
         topic = "projects/test-project/topics/test-topic"
         message = "test message"
-        message_id = publisher.publish(topic, message)
+        with Publisher() as publisher:
+            self.assertIsInstance(publisher, MessagePublisher)
+            self.mock.assert_called_once_with()
+            message_id = publisher.publish(topic, message)
 
         self.assertEqual(message_id, result)
         self.client.publish.assert_called_once_with(topic, data=message.encode(), ordering_key="")
+        self.client.stop.assert_called_once_with()
+        self.client.transport.close.assert_called_once_with()
+
+    def test_publisher_reuses_client_until_context_exits(self):
+        self.future.result.side_effect = ["first-id", "second-id"]
+        topic = "projects/test-project/topics/test-topic"
+
+        with Publisher() as publisher:
+            self.assertEqual(publisher.publish(topic, "first"), "first-id")
+            self.assertEqual(publisher.publish(topic, "second"), "second-id")
+            self.client.stop.assert_not_called()
+            self.client.transport.close.assert_not_called()
+
+        self.assertEqual(self.client.publish.call_count, 2)
+        self.client.stop.assert_called_once_with()
+        self.client.transport.close.assert_called_once_with()
+
+    def test_publish_failure_closes_client_when_context_exits(self):
+        self.future.result.side_effect = RuntimeError("publish failed")
+
+        with self.assertRaisesRegex(RuntimeError, "publish failed"):
+            with Publisher() as publisher:
+                publisher.publish("projects/test-project/topics/test-topic", "test message")
+
+        self.client.stop.assert_called_once_with()
+        self.client.transport.close.assert_called_once_with()
+
+    def test_close_is_idempotent(self):
+        publisher = Publisher()
+
+        publisher.close()
+        publisher.close()
+
+        self.client.stop.assert_called_once_with()
+        self.client.transport.close.assert_called_once_with()
+        with self.assertRaisesRegex(RuntimeError, "Publisher is closed"):
+            publisher.publish("projects/test-project/topics/test-topic", "test message")
 
     def test_publish_with_attributes(self):
         result = "8a26e938-0f1d-41a8-be91-9815f2003cf7"
         self.future.result.return_value = result
 
-        publisher = Publisher()
-
-        self.assertIsInstance(publisher, MessagePublisher)
-        self.mock.assert_called_once_with()
-
         topic = "projects/test-project/topics/test-topic"
         message = "test message"
         attributes = {"foo": "bar"}
-        message_id = publisher.publish(topic, message, attrs=attributes)
+        with Publisher() as publisher:
+            self.assertIsInstance(publisher, MessagePublisher)
+            self.mock.assert_called_once_with()
+            message_id = publisher.publish(topic, message, attrs=attributes)
 
         self.assertEqual(message_id, result)
         self.client.publish.assert_called_once_with(
@@ -60,15 +93,13 @@ class TestMessagePublisher(unittest.TestCase):
         self.future.result.return_value = result
         opts = PublisherOptions(enable_message_ordering=True)
 
-        publisher = OrderedPublisher()
-
-        self.assertIsInstance(publisher, MessagePublisher)
-        self.mock.assert_called_once_with(publisher_options=opts)
-
         topic = "projects/test-project/topics/test-topic"
         message = "test message"
         group = "test"
-        message_id = publisher.publish(topic, message, group=group)
+        with OrderedPublisher() as publisher:
+            self.assertIsInstance(publisher, MessagePublisher)
+            self.mock.assert_called_once_with(publisher_options=opts)
+            message_id = publisher.publish(topic, message, group=group)
 
         self.assertEqual(message_id, result)
         self.client.publish.assert_called_once_with(
