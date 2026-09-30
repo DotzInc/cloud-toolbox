@@ -32,6 +32,18 @@ class TestMessagePublisher(unittest.TestCase):
 
         self.assertEqual(message_id, result)
         self.client.publish.assert_called_once_with(topic, data=message.encode(), ordering_key="")
+        self.client.stop.assert_called_once_with()
+        self.client.transport.close.assert_called_once_with()
+
+    def test_publish_closes_client_when_result_fails(self):
+        self.future.result.side_effect = RuntimeError("publish failed")
+        publisher = Publisher()
+
+        with self.assertRaisesRegex(RuntimeError, "publish failed"):
+            publisher.publish("projects/test-project/topics/test-topic", "test message")
+
+        self.client.stop.assert_called_once_with()
+        self.client.transport.close.assert_called_once_with()
 
     def test_publish_with_attributes(self):
         result = "8a26e938-0f1d-41a8-be91-9815f2003cf7"

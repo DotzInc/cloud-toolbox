@@ -18,7 +18,13 @@ class Publisher:
     ) -> str:
         kwargs = attrs or {}
         future = self.client.publish(recipient, data=message.encode(), ordering_key=group, **kwargs)
-        return future.result()
+        try:
+            return future.result()
+        finally:
+            try:
+                self.client.stop()
+            finally:
+                self.client.transport.close()
 
 
 class OrderedPublisher(Publisher):
