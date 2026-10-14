@@ -1,25 +1,9 @@
 from threading import Lock
-from typing import Any, Callable, Type, TypeVar
+from typing import Any, Callable, Type
 
 from cloud.protocols import MessagePublisher, StorageDownloader, StorageUploader, StorageURLSigner
 
-T = TypeVar("T")
-
 error_message = "%(class)s does not implement %(protocol)s protocol"
-
-
-def singleton(maker: Callable[[], T]) -> Callable[[], T]:
-    lock = Lock()
-    instances: list[T] = []
-
-    def get() -> T:
-        if not instances:
-            with lock:
-                if not instances:
-                    instances.append(maker())
-        return instances[0]
-
-    return get
 
 
 def storage_uploader(
@@ -68,3 +52,20 @@ def message_publisher(
         return publisher_class(*args, **kwargs)
 
     return maker
+
+
+def shared_message_publisher(
+    publisher_class: Type[MessagePublisher], *args: Any, **kwargs: Any
+) -> Callable[[], MessagePublisher]:
+    maker = message_publisher(publisher_class, *args, **kwargs)
+    lock = Lock()
+    instances: list[MessagePublisher] = []
+
+    def shared() -> MessagePublisher:
+        if not instances:
+            with lock:
+                if not instances:
+                    instances.append(maker())
+        return instances[0]
+
+    return shared

@@ -136,42 +136,55 @@ class TestMessagePublisherFactory(unittest.TestCase):
             factory.message_publisher(NotMessagePublisher)  # type: ignore
 
 
-class TestSingleton(unittest.TestCase):
-    def test_creates_instance_lazily(self):
-        maker = mock.Mock(return_value=object())
+class TestSharedMessagePublisherFactory(unittest.TestCase):
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_creates_publisher_lazily(self, client):
+        get_publisher = factory.shared_message_publisher(pubsub.Publisher)
 
-        get = factory.singleton(maker)
+        client.assert_not_called()
+        publisher = get_publisher()
 
-        maker.assert_not_called()
-        get()
-        maker.assert_called_once_with()
+        self.assertIsInstance(publisher, MessagePublisher)
+        self.assertIsInstance(publisher, pubsub.Publisher)
+        client.assert_called_once_with()
 
-    def test_reuses_instance_across_calls(self):
-        get = factory.singleton(object)
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_reuses_publisher_across_calls(self, client):
+        get_publisher = factory.shared_message_publisher(pubsub.Publisher)
 
-        self.assertIs(get(), get())
+        self.assertIs(get_publisher(), get_publisher())
+        client.assert_called_once_with()
 
-    def test_reuses_instance_across_threads(self):
-        maker = mock.Mock(side_effect=lambda: object())
-        get = factory.singleton(maker)
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_reuses_publisher_across_threads(self, client):
+        get_publisher = factory.shared_message_publisher(pubsub.Publisher)
         barrier = Barrier(8)
 
         def call():
             barrier.wait()
-            return get()
+            return get_publisher()
 
         with ThreadPoolExecutor(max_workers=8) as executor:
-            instances = list(executor.map(lambda _: call(), range(8)))
+            publishers = list(executor.map(lambda _: call(), range(8)))
 
-        self.assertEqual(len({id(item) for item in instances}), 1)
-        maker.assert_called_once_with()
-
-    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
-    def test_singleton_publisher(self, client):
-        get = factory.singleton(factory.message_publisher(pubsub.Publisher))
-
-        self.assertIs(get(), get())
+        self.assertEqual(len({id(item) for item in publishers}), 1)
         client.assert_called_once_with()
 
-    def test_instances_are_independent_per_singleton(self):
-        self.assertIsNot(factory.singleton(object)(), factory.singleton(object)())
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_forwards_arguments_to_publisher(self, client):
+        factory.shared_message_publisher(pubsub.OrderedPublisher, "arg")()
+
+        self.assertEqual(client.call_args.args, ("arg",))
+
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_publishers_are_independent_per_factory(self, _):
+        first = factory.shared_message_publisher(pubsub.Publisher)
+        second = factory.shared_message_publisher(pubsub.Publisher)
+
+        self.assertIsNot(first(), second())
+
+    def test_publisher_protocol_validation(self):
+        error = "NotMessagePublisher does not implement MessagePublisher protocol"
+
+        with self.assertRaisesRegex(AssertionError, error):
+            factory.shared_message_publisher(NotMessagePublisher)
