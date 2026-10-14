@@ -1,6 +1,4 @@
 import unittest
-from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
 from unittest import mock
 
 from cloud import factory
@@ -103,6 +101,19 @@ class TestStorageURLSigner(unittest.TestCase):
 
 
 class TestMessagePublisherFactory(unittest.TestCase):
+    def setUp(self):
+        pubsub.Publisher._clients.clear()
+
+    def tearDown(self):
+        pubsub.Publisher._clients.clear()
+
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_google_publisher_shares_client(self, client):
+        Publisher = factory.message_publisher(pubsub.Publisher)
+
+        self.assertIs(Publisher().client, Publisher().client)
+        client.assert_called_once_with()
+
     @mock.patch("google.cloud.pubsub_v1.PublisherClient")
     def test_google_publisher(self, _):
         Publisher = factory.message_publisher(pubsub.Publisher)
@@ -134,57 +145,3 @@ class TestMessagePublisherFactory(unittest.TestCase):
 
         with self.assertRaisesRegex(AssertionError, error):
             factory.message_publisher(NotMessagePublisher)  # type: ignore
-
-
-class TestSharedMessagePublisherFactory(unittest.TestCase):
-    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
-    def test_creates_publisher_lazily(self, client):
-        get_publisher = factory.shared_message_publisher(pubsub.Publisher)
-
-        client.assert_not_called()
-        publisher = get_publisher()
-
-        self.assertIsInstance(publisher, MessagePublisher)
-        self.assertIsInstance(publisher, pubsub.Publisher)
-        client.assert_called_once_with()
-
-    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
-    def test_reuses_publisher_across_calls(self, client):
-        get_publisher = factory.shared_message_publisher(pubsub.Publisher)
-
-        self.assertIs(get_publisher(), get_publisher())
-        client.assert_called_once_with()
-
-    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
-    def test_reuses_publisher_across_threads(self, client):
-        get_publisher = factory.shared_message_publisher(pubsub.Publisher)
-        barrier = Barrier(8)
-
-        def call():
-            barrier.wait()
-            return get_publisher()
-
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            publishers = list(executor.map(lambda _: call(), range(8)))
-
-        self.assertEqual(len({id(item) for item in publishers}), 1)
-        client.assert_called_once_with()
-
-    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
-    def test_forwards_arguments_to_publisher(self, client):
-        factory.shared_message_publisher(pubsub.OrderedPublisher, "arg")()
-
-        self.assertEqual(client.call_args.args, ("arg",))
-
-    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
-    def test_publishers_are_independent_per_factory(self, _):
-        first = factory.shared_message_publisher(pubsub.Publisher)
-        second = factory.shared_message_publisher(pubsub.Publisher)
-
-        self.assertIsNot(first(), second())
-
-    def test_publisher_protocol_validation(self):
-        error = "NotMessagePublisher does not implement MessagePublisher protocol"
-
-        with self.assertRaisesRegex(AssertionError, error):
-            factory.shared_message_publisher(NotMessagePublisher)

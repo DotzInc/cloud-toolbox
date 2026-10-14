@@ -1,5 +1,4 @@
-from threading import Lock
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Type
 
 from cloud.protocols import MessagePublisher, StorageDownloader, StorageUploader, StorageURLSigner
 
@@ -52,21 +51,3 @@ def message_publisher(
         return publisher_class(*args, **kwargs)
 
     return maker
-
-
-def shared_message_publisher(
-    publisher_class: Type[MessagePublisher], *args: Any, **kwargs: Any
-) -> Callable[[], MessagePublisher]:
-    maker = message_publisher(publisher_class, *args, **kwargs)
-    lock = Lock()
-    instance: Optional[MessagePublisher] = None
-
-    def shared() -> MessagePublisher:
-        nonlocal instance
-        if instance is None:
-            with lock:
-                if instance is None:
-                    instance = maker()
-        return instance
-
-    return shared

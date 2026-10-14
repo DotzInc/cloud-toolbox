@@ -53,22 +53,3 @@ from cloud.google.storage import Uploader
 # For this one
 from cloud.amazon.s3 import Uploader
 ```
-
-## Sharing a publisher
-
-`factory.message_publisher` creates a new publisher on every call. To reuse a single publisher
-for the whole process, use `factory.shared_message_publisher`. The publisher is created on the
-first call and the same instance is returned afterwards, which is safe across threads.
-
-```python
-from cloud import factory
-from cloud.google.pubsub import Publisher
-
-get_publisher = factory.shared_message_publisher(Publisher)
-
-get_publisher().publish("projects/my-project/topics/my-topic", "Hello, Pub/Sub!")
-```
-
-The shared publisher lives as long as the process, so do not use it as a context manager and do
-not close it before shutdown. Each process creates its own instance, so avoid calling
-`get_publisher()` before forking workers (for example `gunicorn --preload`).
