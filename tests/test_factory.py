@@ -1,4 +1,6 @@
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from unittest import mock
 
 from cloud import factory
@@ -132,3 +134,44 @@ class TestMessagePublisherFactory(unittest.TestCase):
 
         with self.assertRaisesRegex(AssertionError, error):
             factory.message_publisher(NotMessagePublisher)  # type: ignore
+
+
+class TestSingleton(unittest.TestCase):
+    def test_creates_instance_lazily(self):
+        maker = mock.Mock(return_value=object())
+
+        get = factory.singleton(maker)
+
+        maker.assert_not_called()
+        get()
+        maker.assert_called_once_with()
+
+    def test_reuses_instance_across_calls(self):
+        get = factory.singleton(object)
+
+        self.assertIs(get(), get())
+
+    def test_reuses_instance_across_threads(self):
+        maker = mock.Mock(side_effect=lambda: object())
+        get = factory.singleton(maker)
+        barrier = Barrier(8)
+
+        def call():
+            barrier.wait()
+            return get()
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            instances = list(executor.map(lambda _: call(), range(8)))
+
+        self.assertEqual(len({id(item) for item in instances}), 1)
+        maker.assert_called_once_with()
+
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_singleton_publisher(self, client):
+        get = factory.singleton(factory.message_publisher(pubsub.Publisher))
+
+        self.assertIs(get(), get())
+        client.assert_called_once_with()
+
+    def test_instances_are_independent_per_singleton(self):
+        self.assertIsNot(factory.singleton(object)(), factory.singleton(object)())
