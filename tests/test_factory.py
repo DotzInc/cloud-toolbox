@@ -101,6 +101,19 @@ class TestStorageURLSigner(unittest.TestCase):
 
 
 class TestMessagePublisherFactory(unittest.TestCase):
+    def setUp(self):
+        pubsub.Publisher._clients.clear()
+
+    def tearDown(self):
+        pubsub.Publisher._clients.clear()
+
+    @mock.patch("google.cloud.pubsub_v1.PublisherClient")
+    def test_google_publisher_shares_client(self, client):
+        Publisher = factory.message_publisher(pubsub.Publisher)
+
+        self.assertIs(Publisher().client, Publisher().client)
+        client.assert_called_once_with()
+
     @mock.patch("google.cloud.pubsub_v1.PublisherClient")
     def test_google_publisher(self, _):
         Publisher = factory.message_publisher(pubsub.Publisher)
