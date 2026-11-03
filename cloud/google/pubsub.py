@@ -1,11 +1,33 @@
-from typing import Any, Mapping, Optional
+import os
+from threading import Lock
+from typing import Any, Dict, Hashable, Mapping, Optional
 
 from google.cloud import pubsub_v1
 
 
 class Publisher:
+    _clients: Dict[Hashable, pubsub_v1.PublisherClient] = {}
+    _lock = Lock()
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.client = pubsub_v1.PublisherClient(*args, **kwargs)
+        self.client = self._shared_client(*args, **kwargs)
+
+    @classmethod
+    def _shared_client(cls, *args: Any, **kwargs: Any) -> pubsub_v1.PublisherClient:
+        try:
+            key = (os.getpid(), args, frozenset(kwargs.items()))
+            hash(key)
+        except TypeError:
+            return pubsub_v1.PublisherClient(*args, **kwargs)
+
+        client = cls._clients.get(key)
+        if client is None:
+            with cls._lock:
+                client = cls._clients.get(key)
+                if client is None:
+                    client = pubsub_v1.PublisherClient(*args, **kwargs)
+                    cls._clients[key] = client
+        return client
 
     def publish(
         self,

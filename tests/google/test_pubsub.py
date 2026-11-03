@@ -1,4 +1,6 @@
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from unittest import mock
 
 from google.cloud.pubsub_v1.types import PublisherOptions
@@ -9,6 +11,7 @@ from cloud.protocols import MessagePublisher
 
 class TestMessagePublisher(unittest.TestCase):
     def setUp(self):
+        Publisher._clients.clear()
         self.patcher = mock.patch("google.cloud.pubsub_v1.PublisherClient")
         self.mock = self.patcher.start()
         self.client = self.mock.return_value
@@ -16,6 +19,7 @@ class TestMessagePublisher(unittest.TestCase):
 
     def tearDown(self):
         self.patcher.stop()
+        Publisher._clients.clear()
 
     def test_publish(self):
         result = "bd02bec5-ac5f-429b-8f64-8cde17596d57"
@@ -76,3 +80,54 @@ class TestMessagePublisher(unittest.TestCase):
             data=message.encode(),
             ordering_key=group,
         )
+
+    def test_reuses_client_across_publishers(self):
+        first = Publisher()
+        second = Publisher()
+
+        self.assertIsNot(first, second)
+        self.assertIs(first.client, second.client)
+        self.mock.assert_called_once_with()
+
+    def test_reuses_client_across_threads(self):
+        barrier = Barrier(8)
+
+        def create():
+            barrier.wait()
+            return Publisher().client
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            clients = list(executor.map(lambda _: create(), range(8)))
+
+        self.assertEqual(len({id(client) for client in clients}), 1)
+        self.mock.assert_called_once_with()
+
+    def test_separates_clients_by_arguments(self):
+        self.mock.side_effect = lambda *args, **kwargs: mock.Mock()
+
+        default = Publisher()
+        ordered = OrderedPublisher()
+
+        self.assertIsNot(default.client, ordered.client)
+        self.assertIs(ordered.client, OrderedPublisher().client)
+        self.assertEqual(self.mock.call_count, 2)
+
+    def test_creates_new_client_for_unhashable_arguments(self):
+        self.mock.side_effect = lambda *args, **kwargs: mock.Mock()
+        options = {"enable_message_ordering": True}
+
+        first = Publisher(publisher_options=options)
+        second = Publisher(publisher_options=options)
+
+        self.assertIsNot(first.client, second.client)
+        self.assertEqual(self.mock.call_count, 2)
+
+    def test_creates_new_client_after_fork(self):
+        self.mock.side_effect = lambda *args, **kwargs: mock.Mock()
+        parent = Publisher()
+
+        with mock.patch("os.getpid", return_value=-1):
+            child = Publisher()
+
+        self.assertIsNot(parent.client, child.client)
+        self.assertEqual(self.mock.call_count, 2)
